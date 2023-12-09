@@ -1,6 +1,6 @@
 # Desktop Wallpaper (✨)
 
-> using the COM API of Windows to configure wallpaper settings.
+> using the COM API of Windows to configure wallpaper settings. Require Win8+.
 ---
 <div align="center">
 
