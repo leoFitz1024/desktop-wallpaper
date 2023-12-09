@@ -1,9 +1,8 @@
 const {setWallpaper, getWallpaper, setPosition, getPosition,
-    getBackgroundColor, setBackgroundColor,
-    getSlideShowOptions, setSlideShowOptions,
-    getSlideShowStatus} = require("../../dist/index");
+    getBackgroundColor, setBackgroundColor} = require("../../dist/index");
+const path = require("path")
 
-setWallpaper(0, "C:\\Users\\chen\\Pictures\\test\\2.jpg")
+setWallpaper(0, path.resolve(__dirname, "../../assets/demo.jpg"))
 console.log(getWallpaper(0))
 setPosition(3)
 console.log(getPosition())

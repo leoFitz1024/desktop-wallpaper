@@ -1,4 +1,5 @@
 import bindings from "bindings";
+import fs from "fs";
 
 const nodeDesktopWallpaper = bindings("desktop-wallpaper");
 
@@ -15,31 +16,70 @@ const nodeDesktopWallpaper = bindings("desktop-wallpaper");
 //    */
 //   slideshowTick?: number;
 // }
+
 /**
- * Set window wallpaper
+ * Set the image file as wallpaper.
+ * @param {number} screenIndex - The index of the screen,-1 indicates configuring for all screens.
+ * @param {string} imagePath - The path of the image file.
+ * @returns {void}
+ * @example
+ * setWallpaper(0, "./image.png");
+ *
+ * @tutorial Desktop Wallpaper
  */
 const setWallpaper = (screenIndex: number, imagePath: string) => {
-  nodeDesktopWallpaper.setWallpaper(screenIndex, imagePath);
+    if (!fs.existsSync(imagePath)){
+        throw  new Error("The image file does not exist.");
+    }
+    nodeDesktopWallpaper.setWallpaper(screenIndex, imagePath);
 };
 
+/**
+ * Get the image file path of the wallpaper.
+ * @param screenIndex
+ */
 const getWallpaper = (screenIndex: number):string => {
-  return nodeDesktopWallpaper.getWallpaper(screenIndex);
+    return nodeDesktopWallpaper.getWallpaper(screenIndex);
 };
 
+/**
+ *  Set the position of the wallpaper.
+ * @param fillMode
+ * - CENTER	= 0
+ * - TILE	= 1
+ * - STRETCH= 2
+ * - FIT	= 3
+ * - FILL	= 4
+ * - SPAN	= 5
+ */
 const setPosition = (fillMode: number) => {
-  nodeDesktopWallpaper.setPosition(fillMode);
+    nodeDesktopWallpaper.setPosition(fillMode);
 };
 
+/**
+ * Get the position of the wallpaper.
+ * @returns {number} fillMode
+ */
 const getPosition = ():number => {
-  return nodeDesktopWallpaper.getPosition();
+    return nodeDesktopWallpaper.getPosition();
 };
 
+/**
+ * Set the desktop background color of RGB color
+ * @param r
+ * @param g
+ * @param b
+ */
 const setBackgroundColor = (r:number, g:number, b:number) => {
-  nodeDesktopWallpaper.setBackgroundColor(r, g, b);
+    nodeDesktopWallpaper.setBackgroundColor(r, g, b);
 };
 
-const getBackgroundColor = ():number => {
-  return nodeDesktopWallpaper.getBackgroundColor();
+/**
+ *  Get the desktop background color of RGB color.
+ * @returns {string} RGB color example: 8,8,8
+ */
+const getBackgroundColor = ():string => {
+    return nodeDesktopWallpaper.getBackgroundColor();
 };
 //
 // const setSlideShowOptions = (options?: SlideShowOptions) => {
@@ -65,13 +105,13 @@ const getBackgroundColor = ():number => {
 
 
 export {
-  setWallpaper,
-  getWallpaper,
-  setPosition,
-  getPosition,
-  setBackgroundColor,
-  getBackgroundColor,
-  // setSlideShowOptions,
-  // getSlideShowOptions,
-  // getSlideShowStatus,
+    setWallpaper,
+    getWallpaper,
+    setPosition,
+    getPosition,
+    setBackgroundColor,
+    getBackgroundColor,
+    // setSlideShowOptions,
+    // getSlideShowOptions,
+    // getSlideShowStatus,
 };

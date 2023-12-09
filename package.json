@@ -5,12 +5,12 @@
     "name": "leoFitz1024",
     "email": "chenwangkun@outlook.com"
   },
-  "description": "set your windows wallpaper",
-  "repository": "github:meslzy/electron-as-wallpaper",
+  "description": "Using the COM API of Windows to configure wallpaper settings.",
+  "repository": "github:leoFitz1024/desktop-wallpaper",
   "bugs": {
-    "url": "https://github.com/meslzy/electron-as-wallpaper/issues"
+    "url": "https://github.com/leoFitz1024/desktop-wallpaper/issues"
   },
-  "homepage": "https://github.com/meslzy/electron-as-wallpaper#readme",
+  "homepage": "https://github.com/leoFitz1024/desktop-wallpaper/#readme",
   "publishConfig": {
     "access": "public"
   },
