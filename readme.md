@@ -1,59 +1,36 @@
-       .# Electron As Wallpaper (✨)
+# Desktop Wallpaper (✨)
 
-> set your electron window as wallpaper behind desktop icons
+> using the COM API of Windows to configure wallpaper settings.
 ---
-
 <div align="center">
-
 ![license](https://badgen.net/badge/license/MIT/blue)
-![stars](https://badgen.net/npm/v/electron-as-wallpaper)
-![forks](https://badgen.net/npm/dw/electron-as-wallpaper)
-![issues](https://badgen.net/github/issues/meslzy/electron-as-wallpaper)
-
+![npm](https://badgen.net/npm/v/desktop-wallpaper)
+![downloads](https://badgen.net/npm/dw/desktop-wallpaper)
+![issues](https://badgen.net/github/issues/leopFitz1024/desktop-wallpaper)
 </div>
-
 ---
-
-<div align="center">
-
-![issues](assets/app.gif)
-
-<a href="https://github.com/meslzy/electron-as-wallpaper/releases/tag/v1.0">`try the app`</a>
-
-</div>
-
----
-
 ## Features (⭐)
 
-- [x] set electron window as wallpaper
-- [x] support transparent window
-- [x] support mouse forwarding
-- [x] support keyboard forwarding
+- set slide show
 
 ## Getting Started (✅)
 
 - ### Installation (⏬)
-	- `npm install electron-as-wallpaper --save`
+    - `npm install desktop-wallpaper --save`
 
-- ### How to use (🌠)
+- ### Usage (⚡)
   ```js
-  import {attach, detach, refresh} from "electron-as-wallpaper";
+  import {setWallpaper, getWallpaper, setPosition, getPosition, getBackgroundColor, setBackgroundColor} from "desktop-wallpaper";
   // or
-  const {attach, detach, refresh} = require("electron-as-wallpaper");
+  const {setWallpaper, getWallpaper, setPosition, getPosition, getBackgroundColor, setBackgroundColor} = require("desktop-wallpaper");
   
-  attach(mainWindow);
-  detach(mainWindow);
-  
-  // if the window closed before detach, you can call refresh
-  refresh();
+  setWallpaper(0, "../../assets/demo.jpg")
+  console.log(getWallpaper(0))
+  setPosition(3)
+  console.log(getPosition())
+  setBackgroundColor(255,255,255)
+  console.log(getBackgroundColor())
   ```
-
-- ### Examples
-	- [transparent](test/transparent/index.js)
-	- [input forwarding](test/set-wallpaper/index.js)
-	- [screen size changed](test/screen-size-changed/index.js)
-
 ---
 
 ## The End (💘)
