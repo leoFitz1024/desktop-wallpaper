@@ -1,0 +1,66 @@
+{
+  "compilerOptions": {
+    // Type Checking
+    "allowUnreachableCode": false,
+    "allowUnusedLabels": false,
+    "alwaysStrict": true,
+    "exactOptionalPropertyTypes": false,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitAny": true,
+    "noImplicitOverride": true,
+    "noImplicitThis": true,
+    "noPropertyAccessFromIndexSignature": false,
+    "noUncheckedIndexedAccess": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": false,
+    "strict": true,
+    "strictBindCallApply": true,
+    "strictFunctionTypes": true,
+    "strictNullChecks": true,
+    "strictPropertyInitialization": false,
+    "useUnknownInCatchVariables": true,
+    // Modules
+    "allowUmdGlobalAccess": false,
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    // Emit
+    "declaration": true,
+    "newLine": "lf",
+    "stripInternal": true,
+    // JavaScript,
+    "allowJs": true,
+    "checkJs": true,
+    // Editor Support
+    "disableSizeLimit": true,
+    // Interop Constraints
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "preserveSymlinks": true,
+    // Language and Environment
+    "lib": [
+      "dom",
+      "esnext"
+    ],
+    "target": "esnext",
+    // Compiler Diagnostics
+    "listFiles": false,
+    // Projects
+    "composite": false,
+    "incremental": false,
+    // Output Formatting
+    "pretty": true,
+    // Completeness
+    "skipLibCheck": true,
+    "module": "commonjs",
+    "rootDir": "source",
+    "outDir": "dist"
+  },
+  "include": [
+    "source"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
+}
