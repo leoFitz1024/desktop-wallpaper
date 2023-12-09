@@ -7,7 +7,8 @@
 ![license](https://badgen.net/badge/license/MIT/blue)
 ![npm](https://badgen.net/npm/v/desktop-wallpaper)
 ![downloads](https://badgen.net/npm/dw/desktop-wallpaper)
-![issues](https://badgen.net/github/issues/leopFitz1024/desktop-wallpaper)
+![star](https://badgen.net/github/stars/leoFitz1024/desktop-wallpaper)
+![issues](https://badgen.net/github/issues/leoFitz1024/desktop-wallpaper)
 
 </div>
 
