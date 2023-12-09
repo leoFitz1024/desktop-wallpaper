@@ -3,11 +3,14 @@
 > using the COM API of Windows to configure wallpaper settings.
 ---
 <div align="center">
+
 ![license](https://badgen.net/badge/license/MIT/blue)
 ![npm](https://badgen.net/npm/v/desktop-wallpaper)
 ![downloads](https://badgen.net/npm/dw/desktop-wallpaper)
 ![issues](https://badgen.net/github/issues/leopFitz1024/desktop-wallpaper)
+
 </div>
+
 ---
 ## Features (⭐)
 
