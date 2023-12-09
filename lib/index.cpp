@@ -20,6 +20,59 @@ void releaseDesktopWallpaper() {
     CoUninitialize();
 }
 
+void enableWallpaper(const Napi::CallbackInfo &info){
+    initDesktopWallpaper();
+    HRESULT hr = desktopWallpaper->Enable(TRUE);
+    releaseDesktopWallpaper();
+    if (!SUCCEEDED(hr)) {
+        Napi::Error::New(info.Env(), "Failed to enable wallpaper.").ThrowAsJavaScriptException();
+    }
+}
+
+void disableWallpaper(const Napi::CallbackInfo &info){
+    initDesktopWallpaper();
+    HRESULT hr = desktopWallpaper->Enable(FALSE);
+    releaseDesktopWallpaper();
+    if (!SUCCEEDED(hr)) {
+        Napi::Error::New(info.Env(), "Failed to disable wallpaper.").ThrowAsJavaScriptException();
+    }
+}
+
+Napi::Value getMonitorCount(const Napi::CallbackInfo &info) {
+    initDesktopWallpaper();
+    int count = 0;
+    HRESULT hr = desktopWallpaper->GetMonitorDevicePathCount(reinterpret_cast<UINT *>(&count));
+    releaseDesktopWallpaper();
+    if (SUCCEEDED(hr)) {
+        return Napi::Number::New(info.Env(), count);
+    } else {
+        Napi::Error::New(info.Env(), "Failed to get monitor count.").ThrowAsJavaScriptException();
+        return info.Env().Undefined();
+    }
+}
+
+Napi::Value getMonitorId(const Napi::CallbackInfo &info) {
+    if (info.Length() < 1 || !info[0].IsNumber()) {
+        Napi::TypeError::New(info.Env(),
+                             "Invalid argument. Expected: screenIndex (number).").ThrowAsJavaScriptException();
+        return info.Env().Undefined();
+    }
+    initDesktopWallpaper();
+
+    int screenIndex = info[0].As<Napi::Number>().Int32Value();
+    LPWSTR monitorID = nullptr;
+    HRESULT hr =  desktopWallpaper->GetMonitorDevicePathAt(screenIndex, &monitorID);
+
+    releaseDesktopWallpaper();
+    if (SUCCEEDED(hr)) {
+        Napi::Value result = Napi::String::New(info.Env(), reinterpret_cast<const char16_t *>(monitorID));
+        CoTaskMemFree(monitorID);
+        return result;
+    } else {
+        Napi::Error::New(info.Env(), "Failed to get monitor device path.").ThrowAsJavaScriptException();
+        return info.Env().Undefined();
+    }
+}
 
 Napi::Value setWallpaper(const Napi::CallbackInfo &info) {
     if (info.Length() < 2 || !info[0].IsNumber() || !info[1].IsString()) {
@@ -220,6 +273,10 @@ Napi::Value getBackgroundColor(const Napi::CallbackInfo& info) {
 
 
 Napi::Object Init(Napi::Env env, Napi::Object exports) {
+    exports.Set(Napi::String::New(env, "enableWallpaper"), Napi::Function::New(env, enableWallpaper));
+    exports.Set(Napi::String::New(env, "disableWallpaper"), Napi::Function::New(env, disableWallpaper));
+    exports.Set(Napi::String::New(env, "getMonitorCount"), Napi::Function::New(env, getMonitorCount));
+    exports.Set(Napi::String::New(env, "getMonitorId"), Napi::Function::New(env, getMonitorId));
     exports.Set(Napi::String::New(env, "setWallpaper"), Napi::Function::New(env, setWallpaper));
     exports.Set(Napi::String::New(env, "getWallpaper"), Napi::Function::New(env, getWallpaper));
     exports.Set(Napi::String::New(env, "getPosition"), Napi::Function::New(env, getPosition));

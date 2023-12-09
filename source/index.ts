@@ -18,6 +18,35 @@ const nodeDesktopWallpaper = bindings("desktop-wallpaper");
 // }
 
 /**
+ * Activate the wallpaper.
+ */
+const enableWallpaper = () => {
+    nodeDesktopWallpaper.enableWallpaper();
+};
+
+/**
+ * Deactivate the wallpaper.
+ */
+const disableWallpaper = () => {
+    nodeDesktopWallpaper.disableWallpaper();
+};
+
+/**
+ * Retrieve the number of display devices.
+ */
+const getMonitorCount = ():number => {
+    return nodeDesktopWallpaper.getMonitorCount();
+};
+
+/**
+ * 
+ * @param screenIndex
+ */
+const getMonitorId = (screenIndex:number):string => {
+    return nodeDesktopWallpaper.getMonitorId(screenIndex);
+};
+
+/**
  * Set the image file as wallpaper.
  * @param {number} screenIndex - The index of the screen,-1 indicates configuring for all screens.
  * @param {string} imagePath - The path of the image file.
@@ -105,6 +134,10 @@ const getBackgroundColor = ():string => {
 
 
 export {
+    enableWallpaper,
+    disableWallpaper,
+    getMonitorCount,
+    getMonitorId,
     setWallpaper,
     getWallpaper,
     setPosition,
