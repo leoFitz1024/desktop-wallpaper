@@ -1,5 +1,6 @@
 import bindings from "bindings";
 import fs from "fs";
+import os from "os";
 
 const nodeDesktopWallpaper = bindings("desktop-wallpaper");
 
@@ -34,15 +35,15 @@ const disableWallpaper = () => {
 /**
  * Retrieve the number of display devices.
  */
-const getMonitorCount = ():number => {
+const getMonitorCount = (): number => {
     return nodeDesktopWallpaper.getMonitorCount();
 };
 
 /**
- * 
+ *
  * @param screenIndex
  */
-const getMonitorId = (screenIndex:number):string => {
+const getMonitorId = (screenIndex: number): string => {
     return nodeDesktopWallpaper.getMonitorId(screenIndex);
 };
 
@@ -57,39 +58,51 @@ const getMonitorId = (screenIndex:number):string => {
  * @tutorial Desktop Wallpaper
  */
 const setWallpaper = (screenIndex: number, imagePath: string) => {
-    if (!fs.existsSync(imagePath)){
+    if (!fs.existsSync(imagePath)) {
         throw  new Error("The image file does not exist.");
     }
-    nodeDesktopWallpaper.setWallpaper(screenIndex, imagePath);
+    if (os.release().startsWith("6.1")) {
+        return nodeDesktopWallpaper.setWallpaperWin7(imagePath);
+    } else {
+        nodeDesktopWallpaper.setWallpaper(screenIndex, imagePath);
+    }
 };
 
 /**
  * Get the image file path of the wallpaper.
  * @param screenIndex
  */
-const getWallpaper = (screenIndex: number):string => {
-    return nodeDesktopWallpaper.getWallpaper(screenIndex);
+const getWallpaper = (screenIndex: number): string => {
+    if (os.release().startsWith("6.1")) {
+        return nodeDesktopWallpaper.getWallpaperWin7();
+    } else {
+        return nodeDesktopWallpaper.getWallpaper(screenIndex);
+    }
 };
 
 /**
  *  Set the position of the wallpaper.
  * @param fillMode
- * - CENTER	= 0
- * - TILE	= 1
+ * - CENTER    = 0
+ * - TILE    = 1
  * - STRETCH= 2
- * - FIT	= 3
- * - FILL	= 4
- * - SPAN	= 5
+ * - FIT    = 3
+ * - FILL    = 4
+ * - SPAN    = 5
  */
 const setPosition = (fillMode: number) => {
-    nodeDesktopWallpaper.setPosition(fillMode);
+    if (os.release().startsWith("6.1")) {
+        nodeDesktopWallpaper.setPositionWin7(fillMode);
+    } else {
+        nodeDesktopWallpaper.setPosition(fillMode);
+    }
 };
 
 /**
  * Get the position of the wallpaper.
  * @returns {number} fillMode
  */
-const getPosition = ():number => {
+const getPosition = (): number => {
     return nodeDesktopWallpaper.getPosition();
 };
 
@@ -99,15 +112,19 @@ const getPosition = ():number => {
  * @param g
  * @param b
  */
-const setBackgroundColor = (r:number, g:number, b:number) => {
-    nodeDesktopWallpaper.setBackgroundColor(r, g, b);
+const setBackgroundColor = (r: number, g: number, b: number) => {
+    if (os.release().startsWith("6.1")) {
+        nodeDesktopWallpaper.setBackgroundColorWin7(r, g, b);
+    } else {
+        nodeDesktopWallpaper.setBackgroundColor(r, g, b);
+    }
 };
 
 /**
  *  Get the desktop background color of RGB color.
  * @returns {string} RGB color example: 8,8,8
  */
-const getBackgroundColor = ():string => {
+const getBackgroundColor = (): string => {
     return nodeDesktopWallpaper.getBackgroundColor();
 };
 //
