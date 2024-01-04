@@ -116,7 +116,7 @@ Napi::Value setWallpaperWin7(const Napi::CallbackInfo &info) {
         return info.Env().Undefined();
     }
     std::string imagePath = info[0].As<Napi::String>().Utf8Value();
-    if (SystemParametersInfo(SPI_SETDESKWALLPAPER, 0, (PVOID)imagePath.c_str(), SPIF_UPDATEINIFILE | SPIF_SENDCHANGE)){
+    if (SystemParametersInfo(SPI_SETDESKWALLPAPER, TRUE, (PVOID)imagePath.c_str(), SPIF_SENDCHANGE)){
         return Napi::Boolean::New(info.Env(), true);
     }else{
         Napi::Error::New(info.Env(), "Failed to set wallpaper.").ThrowAsJavaScriptException();
@@ -179,30 +179,6 @@ Napi::Value setPosition(const Napi::CallbackInfo &info) {
     }
 }
 
-// CENTER - TILE - STRETCH - FIT - FILL - SPAN
-int FILL_MODEL[6][2] = {{0, 0}, {0, 1}, {2, 0}, {6, 0}, {10, 0}, {22, 0}};
-Napi::Value setPositionWin7(const Napi::CallbackInfo &info) {
-    if (info.Length() < 1 || !info[0].IsNumber()) {
-        Napi::TypeError::New(info.Env(),
-                             "Invalid arguments. Expected: fillMode (number).").ThrowAsJavaScriptException();
-        return info.Env().Undefined();
-    }
-    int fillMode = info[0].As<Napi::Number>().Int32Value();
-    HKEY key;
-    if (RegOpenKeyEx(HKEY_CURRENT_USER, "Control Panel\\Desktop", 0, KEY_SET_VALUE, &key) == ERROR_SUCCESS) {
-        std::string wallpaperStyle = std::to_string(FILL_MODEL[fillMode][0]);
-        RegSetValueEx(key, "WallpaperStyle", 0, REG_SZ, reinterpret_cast<const BYTE*>(wallpaperStyle.c_str()), (wallpaperStyle.size() + 1) * sizeof(wchar_t));
-        std::string tileWallpaper = std::to_string(FILL_MODEL[fillMode][1]);
-        RegSetValueEx(key, "TileWallpaper", 0, REG_SZ, reinterpret_cast<const BYTE*>(tileWallpaper.c_str()), (tileWallpaper.size() + 1) * sizeof(wchar_t));
-        RegCloseKey(key);
-        SystemParametersInfo(SPI_SETDESKWALLPAPER, 0, nullptr, SPIF_UPDATEINIFILE | SPIF_SENDCHANGE);
-        return Napi::Boolean::New(info.Env(), true);
-    }else {
-        Napi::Error::New(info.Env(), "Failed to set position.").ThrowAsJavaScriptException();
-        return info.Env().Undefined();
-    }
-}
-
 Napi::Value getPosition(const Napi::CallbackInfo &info) {
     initDesktopWallpaper();
     DESKTOP_WALLPAPER_POSITION position;
@@ -236,27 +212,6 @@ Napi::Value setBackgroundColor(const Napi::CallbackInfo& info) {
     }
 }
 
-Napi::Value setBackgroundColorWin7(const Napi::CallbackInfo& info) {
-    if (info.Length() < 3 || !info[0].IsNumber() || !info[1].IsNumber() || !info[2].IsNumber()) {
-        Napi::TypeError::New(info.Env(), "Invalid arguments. Expected: RGB COLOR (8,8,8).").ThrowAsJavaScriptException();
-        return info.Env().Undefined();
-    }
-    int red = info[0].As<Napi::Number>().Int32Value();
-    int green = info[1].As<Napi::Number>().Int32Value();
-    int blue = info[2].As<Napi::Number>().Int32Value();
-    HKEY key;
-    if (RegOpenKeyEx(HKEY_CURRENT_USER, "Control Panel\\Colors", 0, KEY_SET_VALUE, &key) == ERROR_SUCCESS) {
-        std::string colorString = std::to_string(red) + " " + std::to_string(green) + " " + std::to_string(blue);
-        RegSetValueEx(key, "Background", 0, REG_SZ, reinterpret_cast<const BYTE*>(colorString.c_str()), (colorString.size() + 1) * sizeof(wchar_t));
-        RegCloseKey(key);
-        SystemParametersInfo(SPI_SETDESKWALLPAPER, 0, nullptr, SPIF_UPDATEINIFILE | SPIF_SENDCHANGE);
-        return Napi::Boolean::New(info.Env(), true);
-    }else{
-        Napi::Error::New(info.Env(), "Failed to set background color.").ThrowAsJavaScriptException();
-        return info.Env().Undefined();
-    }
-}
-
 Napi::Value getBackgroundColor(const Napi::CallbackInfo& info) {
     initDesktopWallpaper();
 
@@ -274,6 +229,12 @@ Napi::Value getBackgroundColor(const Napi::CallbackInfo& info) {
         Napi::Error::New(info.Env(), "Failed to get background color.").ThrowAsJavaScriptException();
         return info.Env().Undefined();
     }
+}
+
+void refresh(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  Napi::HandleScope scope(env);
+  SystemParametersInfo(SPI_SETDESKWALLPAPER, 0, nullptr, SPIF_SENDCHANGE);
 }
 
 //
@@ -358,10 +319,9 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
     exports.Set(Napi::String::New(env, "getWallpaperWin7"), Napi::Function::New(env, getWallpaperWin7));
     exports.Set(Napi::String::New(env, "getPosition"), Napi::Function::New(env, getPosition));
     exports.Set(Napi::String::New(env, "setPosition"), Napi::Function::New(env, setPosition));
-    exports.Set(Napi::String::New(env, "setPositionWin7"), Napi::Function::New(env, setPositionWin7));
     exports.Set(Napi::String::New(env, "getBackgroundColor"), Napi::Function::New(env, getBackgroundColor));
     exports.Set(Napi::String::New(env, "setBackgroundColor"), Napi::Function::New(env, setBackgroundColor));
-    exports.Set(Napi::String::New(env, "setBackgroundColorWin7"), Napi::Function::New(env, setBackgroundColorWin7));
+    exports.Set(Napi::String::New(env, "refresh"), Napi::Function::New(env, refresh));
 //    exports.Set(Napi::String::New(env, "getSlideShowOptions"), Napi::Function::New(env, getSlideShowOptions));
 //    exports.Set(Napi::String::New(env, "setSlideShowOptions"), Napi::Function::New(env, setSlideShowOptions));
 //    exports.Set(Napi::String::New(env, "getSlideShowStatus"), Napi::Function::New(env, getSlideShowStatus));
