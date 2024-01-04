@@ -62,7 +62,7 @@ const setWallpaper = (screenIndex: number, imagePath: string) => {
     if (!fs.existsSync(imagePath)) {
         throw  new Error("The image file does not exist.");
     }
-    if (os.release().startsWith("6.1") || (2>1)) {
+    if (os.release().startsWith("6.1")) {
         return nodeDesktopWallpaper.setWallpaperWin7(imagePath);
     } else {
         nodeDesktopWallpaper.setWallpaper(screenIndex, imagePath);
@@ -74,7 +74,7 @@ const setWallpaper = (screenIndex: number, imagePath: string) => {
  * @param screenIndex
  */
 const getWallpaper = (screenIndex: number): string => {
-    if (os.release().startsWith("6.1")|| (2>1)) {
+    if (os.release().startsWith("6.1")) {
         return nodeDesktopWallpaper.getWallpaperWin7();
     } else {
         return nodeDesktopWallpaper.getWallpaper(screenIndex);
@@ -92,7 +92,7 @@ const getWallpaper = (screenIndex: number): string => {
  * - SPAN    = 5
  */
 const setPosition = (fillMode: number) => {
-    if (os.release().startsWith("6.1")|| (2>1)) {
+    if (os.release().startsWith("6.1")) {
         wallpaperWin7.setPosition(fillMode)
         nodeDesktopWallpaper.refresh();
     } else {
@@ -105,7 +105,7 @@ const setPosition = (fillMode: number) => {
  * @returns {number} fillMode
  */
 const getPosition = (): number => {
-    if (os.release().startsWith("6.1")|| (2>1)) {
+    if (os.release().startsWith("6.1")) {
         return wallpaperWin7.getPosition()
     } else {
         return nodeDesktopWallpaper.getPosition();
@@ -119,7 +119,7 @@ const getPosition = (): number => {
  * @param b
  */
 const setBackgroundColor = (r: number, g: number, b: number) => {
-    if (os.release().startsWith("6.1")|| (2>1)) {
+    if (os.release().startsWith("6.1")) {
         wallpaperWin7.setBackgroundColor(r, g, b)
         nodeDesktopWallpaper.refresh();
     } else {
@@ -132,7 +132,7 @@ const setBackgroundColor = (r: number, g: number, b: number) => {
  * @returns {string} RGB color example: 8,8,8
  */
 const getBackgroundColor = (): string => {
-    if (os.release().startsWith("6.1")|| (2>1)) {
+    if (os.release().startsWith("6.1")) {
         return wallpaperWin7.getBackgroundColor()
     } else {
         return nodeDesktopWallpaper.getBackgroundColor();
