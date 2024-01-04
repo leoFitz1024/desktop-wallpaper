@@ -2,16 +2,16 @@ const {getMonitorCount, getMonitorId, setWallpaper, getWallpaper, setPosition, g
     getBackgroundColor, setBackgroundColor, enableWallpaper, disableWallpaper} = require("../../dist/index");
 const path = require("path")
 
-
-console.log(getWallpaper(0))
-setPosition(4)
+setPosition(3)
 console.log(getPosition())
 // console.log(getPosition())
 // console.log(getBackgroundColor())
-setBackgroundColor(99,99,255)
-console.log(getBackgroundColor(99,99,255))
+setBackgroundColor(0,0,0)
+console.log(getBackgroundColor())
 // console.log(path.resolve(__dirname, "../../assets/demo.jpg"))
-setWallpaper(0, path.resolve(__dirname, "../../assets/demo.png"))
+setWallpaper(0, path.resolve(__dirname, "../../assets/demo.jpg"))
+console.log(getWallpaper(0))
+
 // console.log(getBackgroundColor())
 // let monitorCount = getMonitorCount();
 // for (let i = 0; i < monitorCount; i++) {

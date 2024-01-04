@@ -2,6 +2,9 @@
 
 #include <Windows.h>
 #include <ShObjIdl.h>
+
+#include <wininet.h>
+#include <shlobj.h>
 #include <iostream>
 
 
@@ -110,18 +113,41 @@ Napi::Value setWallpaper(const Napi::CallbackInfo &info) {
 
 
 Napi::Value setWallpaperWin7(const Napi::CallbackInfo &info) {
-    if (info.Length() < 1 || !info[0].IsString()) {
-        Napi::TypeError::New(info.Env(),
-                             "Invalid arguments. Expected:  imagePath (string).").ThrowAsJavaScriptException();
-        return info.Env().Undefined();
-    }
+
     std::string imagePath = info[0].As<Napi::String>().Utf8Value();
-    if (SystemParametersInfo(SPI_SETDESKWALLPAPER, TRUE, (PVOID)imagePath.c_str(), SPIF_SENDCHANGE)){
-        return Napi::Boolean::New(info.Env(), true);
-    }else{
+    // Convert std::string to wchar_t*
+    const wchar_t* imageWPath = L"";
+    int bufferSize = MultiByteToWideChar(CP_UTF8, 0, imagePath.c_str(), -1, nullptr, 0);
+    wchar_t* buffer = new wchar_t[bufferSize];
+    MultiByteToWideChar(CP_UTF8, 0, imagePath.c_str(), -1, buffer, bufferSize);
+    imageWPath = buffer;
+
+    CoInitialize(NULL);
+    HRESULT hr;
+    IActiveDesktop* pIAD;
+    hr = CoCreateInstance(CLSID_ActiveDesktop, NULL, CLSCTX_INPROC_SERVER,
+        IID_IActiveDesktop, (void**)& pIAD);
+    if (!SUCCEEDED(hr)) {
         Napi::Error::New(info.Env(), "Failed to set wallpaper.").ThrowAsJavaScriptException();
         return info.Env().Undefined();
     }
+
+    hr = pIAD->SetWallpaper(imageWPath, 0);
+    //release
+    delete[] buffer;
+    if (!SUCCEEDED(hr)) {
+        Napi::Error::New(info.Env(), "Failed to set wallpaper.").ThrowAsJavaScriptException();
+        return info.Env().Undefined();
+    }
+
+    hr = pIAD->ApplyChanges(AD_APPLY_ALL);
+    if (!SUCCEEDED(hr)) {
+        Napi::Error::New(info.Env(), "Failed to set wallpaper.").ThrowAsJavaScriptException();
+        return info.Env().Undefined();
+    }
+    pIAD->Release();
+    CoUninitialize();
+    return Napi::Boolean::New(info.Env(), true);
 }
 
 Napi::Value getWallpaper(const Napi::CallbackInfo &info) {
