@@ -1,7 +1,7 @@
 import bindings from "bindings";
-import fs from "fs";
 import os from "os";
 import * as wallpaperWin7 from "./wallpaper-win7";
+import * as fs from "fs";
 
 const nodeDesktopWallpaper = bindings("desktop-wallpaper");
 

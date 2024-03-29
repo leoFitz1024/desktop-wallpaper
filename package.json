@@ -1,6 +1,6 @@
 {
   "name": "desktop-wallpaper",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "author": {
     "name": "leoFitz1024",
     "email": "chenwangkun@outlook.com"
@@ -25,7 +25,7 @@
     "gyp:configure": "node-gyp configure",
     "gyp:rebuild": "node-gyp rebuild",
     "pretest": "npm run gyp:rebuild && tsc --build",
-    "test": "node test/set-wallpaper/index.js",
+    "test": "chcp 65001 && node test/set-wallpaper/index.js",
     "prepublishOnly": "npm run build && npm run gyp:rebuild",
     "publish-me": "npm publish --access public"
   },

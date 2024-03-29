@@ -13,6 +13,7 @@ using namespace Napi;
 IDesktopWallpaper *desktopWallpaper = nullptr;
 
 IDesktopWallpaper *initDesktopWallpaper() {
+    setlocale(LC_ALL, ".utf-8");
     CoInitialize(nullptr);
     CoCreateInstance(CLSID_DesktopWallpaper, nullptr, CLSCTX_ALL, IID_IDesktopWallpaper, (void **) &desktopWallpaper);
     return desktopWallpaper;
@@ -26,12 +27,29 @@ void releaseDesktopWallpaper() {
     CoUninitialize();
 }
 
+
+std::string GetLastErrorMessage() {
+    DWORD errorCode = GetLastError();
+    LPTSTR messageBuffer = nullptr;
+    size_t size = FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
+                                 nullptr, errorCode, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+                                 reinterpret_cast<LPTSTR>(&messageBuffer), 0, nullptr);
+    if (size > 0) {
+        std::string msg;
+        msg.assign(messageBuffer, sizeof(messageBuffer));
+    	LocalFree(messageBuffer);
+        return " Error code:" + std::to_string(errorCode) + ":" + msg;
+    } else {
+        return "Failed to get last error message.";
+    }
+}
+
 void enableWallpaper(const Napi::CallbackInfo &info){
     initDesktopWallpaper();
     HRESULT hr = desktopWallpaper->Enable(TRUE);
     releaseDesktopWallpaper();
     if (!SUCCEEDED(hr)) {
-        Napi::Error::New(info.Env(), "Failed to enable wallpaper.").ThrowAsJavaScriptException();
+        Napi::Error::New(info.Env(), "Failed to enable wallpaper." + GetLastErrorMessage()).ThrowAsJavaScriptException();
     }
 }
 
@@ -40,7 +58,7 @@ void disableWallpaper(const Napi::CallbackInfo &info){
     HRESULT hr = desktopWallpaper->Enable(FALSE);
     releaseDesktopWallpaper();
     if (!SUCCEEDED(hr)) {
-        Napi::Error::New(info.Env(), "Failed to disable wallpaper.").ThrowAsJavaScriptException();
+        Napi::Error::New(info.Env(), "Failed to disable wallpaper." + GetLastErrorMessage()).ThrowAsJavaScriptException();
     }
 }
 
@@ -52,7 +70,7 @@ Napi::Value getMonitorCount(const Napi::CallbackInfo &info) {
     if (SUCCEEDED(hr)) {
         return Napi::Number::New(info.Env(), count);
     } else {
-        Napi::Error::New(info.Env(), "Failed to get monitor count.").ThrowAsJavaScriptException();
+        Napi::Error::New(info.Env(), "Failed to get monitor count." + GetLastErrorMessage()).ThrowAsJavaScriptException();
         return info.Env().Undefined();
     }
 }
@@ -75,7 +93,7 @@ Napi::Value getMonitorId(const Napi::CallbackInfo &info) {
         CoTaskMemFree(monitorID);
         return result;
     } else {
-        Napi::Error::New(info.Env(), "Failed to get monitor device path.").ThrowAsJavaScriptException();
+        Napi::Error::New(info.Env(), "Failed to get monitor device path." + GetLastErrorMessage()).ThrowAsJavaScriptException();
         return info.Env().Undefined();
     }
 }
@@ -106,7 +124,7 @@ Napi::Value setWallpaper(const Napi::CallbackInfo &info) {
     if (SUCCEEDED(hr)) {
         return Napi::Boolean::New(info.Env(), true);
     } else {
-        Napi::Error::New(info.Env(), "Failed to set wallpaper.").ThrowAsJavaScriptException();
+        Napi::Error::New(info.Env(), "Failed to set wallpaper." + GetLastErrorMessage()).ThrowAsJavaScriptException();
         return info.Env().Undefined();
     }
 }
@@ -128,7 +146,7 @@ Napi::Value setWallpaperWin7(const Napi::CallbackInfo &info) {
     hr = CoCreateInstance(CLSID_ActiveDesktop, NULL, CLSCTX_INPROC_SERVER,
         IID_IActiveDesktop, (void**)& pIAD);
     if (!SUCCEEDED(hr)) {
-        Napi::Error::New(info.Env(), "Failed to set wallpaper.").ThrowAsJavaScriptException();
+        Napi::Error::New(info.Env(), "Failed to create ActiveDesktop." + GetLastErrorMessage()).ThrowAsJavaScriptException();
         return info.Env().Undefined();
     }
 
@@ -136,13 +154,13 @@ Napi::Value setWallpaperWin7(const Napi::CallbackInfo &info) {
     //release
     delete[] buffer;
     if (!SUCCEEDED(hr)) {
-        Napi::Error::New(info.Env(), "Failed to set wallpaper.").ThrowAsJavaScriptException();
+        Napi::Error::New(info.Env(), "Failed to activeDesktop->SetWallpaper." + GetLastErrorMessage()).ThrowAsJavaScriptException();
         return info.Env().Undefined();
     }
 
     hr = pIAD->ApplyChanges(AD_APPLY_ALL);
     if (!SUCCEEDED(hr)) {
-        Napi::Error::New(info.Env(), "Failed to set wallpaper.").ThrowAsJavaScriptException();
+        Napi::Error::New(info.Env(), "Failed to activeDesktop->ApplyChanges." + GetLastErrorMessage()).ThrowAsJavaScriptException();
         return info.Env().Undefined();
     }
     pIAD->Release();
@@ -171,7 +189,7 @@ Napi::Value getWallpaper(const Napi::CallbackInfo &info) {
         CoTaskMemFree(wallpaperPath);
         return result;
     } else {
-        Napi::Error::New(info.Env(), "Failed to get wallpaper.").ThrowAsJavaScriptException();
+        Napi::Error::New(info.Env(), "Failed to get wallpaper win7." + GetLastErrorMessage()).ThrowAsJavaScriptException();
         return info.Env().Undefined();
     }
 }
@@ -182,7 +200,7 @@ Napi::Value getWallpaperWin7(const Napi::CallbackInfo& info) {
     if (SystemParametersInfo(SPI_GETDESKWALLPAPER, MAX_PATH, wallpaperPath, 0)) {
         return Napi::String::New(env, reinterpret_cast<const char*>(wallpaperPath));
     }else{
-        Napi::Error::New(info.Env(), "Failed to get wallpaper.").ThrowAsJavaScriptException();
+        Napi::Error::New(info.Env(), "Failed to get wallpaper win7." + GetLastErrorMessage()).ThrowAsJavaScriptException();
         return info.Env().Undefined();
     }
 }
@@ -200,7 +218,7 @@ Napi::Value setPosition(const Napi::CallbackInfo &info) {
     if (SUCCEEDED(hr)) {
         return Napi::Boolean::New(info.Env(), true);
     } else {
-        Napi::Error::New(info.Env(), "Failed to set position.").ThrowAsJavaScriptException();
+        Napi::Error::New(info.Env(), "Failed to set position." + GetLastErrorMessage()).ThrowAsJavaScriptException();
         return info.Env().Undefined();
     }
 }
@@ -213,7 +231,7 @@ Napi::Value getPosition(const Napi::CallbackInfo &info) {
     if (SUCCEEDED(hr)) {
         return Napi::Number::New(info.Env(), position);
     } else {
-        Napi::Error::New(info.Env(), "Failed to get position.").ThrowAsJavaScriptException();
+        Napi::Error::New(info.Env(), "Failed to get position." + GetLastErrorMessage()).ThrowAsJavaScriptException();
         return info.Env().Undefined();
     }
 }
@@ -233,7 +251,7 @@ Napi::Value setBackgroundColor(const Napi::CallbackInfo& info) {
     if (SUCCEEDED(hr)) {
         return Napi::Boolean::New(info.Env(), true);
     } else {
-        Napi::Error::New(info.Env(), "Failed to set background color.").ThrowAsJavaScriptException();
+        Napi::Error::New(info.Env(), "Failed to set background color." + GetLastErrorMessage()).ThrowAsJavaScriptException();
         return info.Env().Undefined();
     }
 }
@@ -252,7 +270,7 @@ Napi::Value getBackgroundColor(const Napi::CallbackInfo& info) {
     if (SUCCEEDED(hr)) {
         return Napi::String::New(info.Env(), result);
     } else {
-        Napi::Error::New(info.Env(), "Failed to get background color.").ThrowAsJavaScriptException();
+        Napi::Error::New(info.Env(), "Failed to get background color." + GetLastErrorMessage()).ThrowAsJavaScriptException();
         return info.Env().Undefined();
     }
 }
@@ -262,6 +280,8 @@ void refresh(const Napi::CallbackInfo& info) {
   Napi::HandleScope scope(env);
   SystemParametersInfo(SPI_SETDESKWALLPAPER, 0, nullptr, SPIF_SENDCHANGE);
 }
+
+
 
 //
 //Napi::Value setSlideShowOptions(const Napi::CallbackInfo& info) {
