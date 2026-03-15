@@ -15,9 +15,23 @@ IDesktopWallpaper *desktopWallpaper = nullptr;
 IDesktopWallpaper *initDesktopWallpaper() {
     setlocale(LC_ALL, ".utf-8");
     CoInitialize(nullptr);
-    CoCreateInstance(CLSID_DesktopWallpaper, nullptr, CLSCTX_ALL, IID_IDesktopWallpaper, (void **) &desktopWallpaper);
+
+    HRESULT hr = CoCreateInstance(
+        CLSID_DesktopWallpaper,
+        nullptr,
+        CLSCTX_ALL,
+        IID_IDesktopWallpaper,
+        reinterpret_cast<void **>(&desktopWallpaper)
+    );
+
+    if (!SUCCEEDED(hr)) {
+        desktopWallpaper = nullptr;
+    }
+
     return desktopWallpaper;
 }
+
+std::string GetLastErrorMessage();
 
 void releaseDesktopWallpaper() {
     if (desktopWallpaper) {
@@ -28,24 +42,43 @@ void releaseDesktopWallpaper() {
 }
 
 
+bool ensureDesktopWallpaper(const Napi::Env& env) {
+    if (initDesktopWallpaper() != nullptr) {
+        return true;
+    }
+
+    Napi::Error::New(env, "Failed to initialize IDesktopWallpaper." + GetLastErrorMessage()).ThrowAsJavaScriptException();
+    return false;
+}
+
+
 std::string GetLastErrorMessage() {
     DWORD errorCode = GetLastError();
-    LPTSTR messageBuffer = nullptr;
-    size_t size = FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
-                                 nullptr, errorCode, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-                                 reinterpret_cast<LPTSTR>(&messageBuffer), 0, nullptr);
-    if (size > 0) {
-        std::string msg;
-        msg.assign(messageBuffer, sizeof(messageBuffer));
-    	LocalFree(messageBuffer);
-        return " Error code:" + std::to_string(errorCode) + ":" + msg;
-    } else {
-        return "Failed to get last error message.";
+    LPSTR messageBuffer = nullptr;
+    DWORD size = FormatMessageA(
+        FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+        nullptr,
+        errorCode,
+        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+        reinterpret_cast<LPSTR>(&messageBuffer),
+        0,
+        nullptr
+    );
+
+    if (size == 0 || messageBuffer == nullptr) {
+        return " Error code:" + std::to_string(errorCode) + ": Failed to get last error message.";
     }
+
+    std::string msg(messageBuffer, size);
+    LocalFree(messageBuffer);
+    return " Error code:" + std::to_string(errorCode) + ": " + msg;
 }
 
 void enableWallpaper(const Napi::CallbackInfo &info){
-    initDesktopWallpaper();
+    if (!ensureDesktopWallpaper(info.Env())) {
+        return;
+    }
+
     HRESULT hr = desktopWallpaper->Enable(TRUE);
     releaseDesktopWallpaper();
     if (!SUCCEEDED(hr)) {
@@ -54,7 +87,10 @@ void enableWallpaper(const Napi::CallbackInfo &info){
 }
 
 void disableWallpaper(const Napi::CallbackInfo &info){
-    initDesktopWallpaper();
+    if (!ensureDesktopWallpaper(info.Env())) {
+        return;
+    }
+
     HRESULT hr = desktopWallpaper->Enable(FALSE);
     releaseDesktopWallpaper();
     if (!SUCCEEDED(hr)) {
@@ -63,7 +99,10 @@ void disableWallpaper(const Napi::CallbackInfo &info){
 }
 
 Napi::Value getMonitorCount(const Napi::CallbackInfo &info) {
-    initDesktopWallpaper();
+    if (!ensureDesktopWallpaper(info.Env())) {
+        return info.Env().Undefined();
+    }
+
     int count = 0;
     HRESULT hr = desktopWallpaper->GetMonitorDevicePathCount(reinterpret_cast<UINT *>(&count));
     releaseDesktopWallpaper();
@@ -81,18 +120,20 @@ Napi::Value getMonitorId(const Napi::CallbackInfo &info) {
                              "Invalid argument. Expected: screenIndex (number).").ThrowAsJavaScriptException();
         return info.Env().Undefined();
     }
-    initDesktopWallpaper();
+    if (!ensureDesktopWallpaper(info.Env())) {
+        return info.Env().Undefined();
+    }
 
     int screenIndex = info[0].As<Napi::Number>().Int32Value();
     LPWSTR monitorID = nullptr;
     HRESULT hr =  desktopWallpaper->GetMonitorDevicePathAt(screenIndex, &monitorID);
-
-    releaseDesktopWallpaper();
     if (SUCCEEDED(hr)) {
         Napi::Value result = Napi::String::New(info.Env(), reinterpret_cast<const char16_t *>(monitorID));
         CoTaskMemFree(monitorID);
+        releaseDesktopWallpaper();
         return result;
     } else {
+        releaseDesktopWallpaper();
         Napi::Error::New(info.Env(), "Failed to get monitor device path." + GetLastErrorMessage()).ThrowAsJavaScriptException();
         return info.Env().Undefined();
     }
@@ -104,7 +145,10 @@ Napi::Value setWallpaper(const Napi::CallbackInfo &info) {
                              "Invalid arguments. Expected: screenIndex (number), imagePath (string).").ThrowAsJavaScriptException();
         return info.Env().Undefined();
     }
-    initDesktopWallpaper();
+    if (!ensureDesktopWallpaper(info.Env())) {
+        return info.Env().Undefined();
+    }
+
     int screenIndex = info[0].As<Napi::Number>().Int32Value();
     std::u16string imagePathUtf16 = info[1].As<Napi::String>().Utf16Value();
 
@@ -112,12 +156,19 @@ Napi::Value setWallpaper(const Napi::CallbackInfo &info) {
     std::wstring imagePath(imagePathUtf16.begin(), imagePathUtf16.end());
 
     HRESULT hr;
+    LPWSTR monitorID = nullptr;
     if (screenIndex < 0) {
         hr = desktopWallpaper->SetWallpaper(nullptr, imagePath.c_str());
     } else {
-        LPWSTR monitorID = nullptr;
-        desktopWallpaper->GetMonitorDevicePathAt(screenIndex, &monitorID);
+        HRESULT monitorHr = desktopWallpaper->GetMonitorDevicePathAt(screenIndex, &monitorID);
+        if (!SUCCEEDED(monitorHr)) {
+            releaseDesktopWallpaper();
+            Napi::Error::New(info.Env(), "Failed to get monitor device path." + GetLastErrorMessage()).ThrowAsJavaScriptException();
+            return info.Env().Undefined();
+        }
+
         hr = desktopWallpaper->SetWallpaper(monitorID, imagePath.c_str());
+        CoTaskMemFree(monitorID);
     }
 
     releaseDesktopWallpaper();
@@ -131,40 +182,58 @@ Napi::Value setWallpaper(const Napi::CallbackInfo &info) {
 
 
 Napi::Value setWallpaperWin7(const Napi::CallbackInfo &info) {
+    if (info.Length() < 1 || !info[0].IsString()) {
+        Napi::TypeError::New(info.Env(), "Invalid arguments. Expected: imagePath (string).")
+            .ThrowAsJavaScriptException();
+        return info.Env().Undefined();
+    }
 
     std::string imagePath = info[0].As<Napi::String>().Utf8Value();
-    // Convert std::string to wchar_t*
-    const wchar_t* imageWPath = L"";
     int bufferSize = MultiByteToWideChar(CP_UTF8, 0, imagePath.c_str(), -1, nullptr, 0);
+    if (bufferSize <= 0) {
+        Napi::Error::New(info.Env(), "Failed to convert image path." + GetLastErrorMessage())
+            .ThrowAsJavaScriptException();
+        return info.Env().Undefined();
+    }
+
     wchar_t* buffer = new wchar_t[bufferSize];
     MultiByteToWideChar(CP_UTF8, 0, imagePath.c_str(), -1, buffer, bufferSize);
-    imageWPath = buffer;
 
-    CoInitialize(NULL);
-    HRESULT hr;
-    IActiveDesktop* pIAD;
-    hr = CoCreateInstance(CLSID_ActiveDesktop, NULL, CLSCTX_INPROC_SERVER,
-        IID_IActiveDesktop, (void**)& pIAD);
+    CoInitialize(nullptr);
+
+    IActiveDesktop* pIAD = nullptr;
+    HRESULT hr = CoCreateInstance(
+        CLSID_ActiveDesktop,
+        nullptr,
+        CLSCTX_INPROC_SERVER,
+        IID_IActiveDesktop,
+        reinterpret_cast<void **>(&pIAD)
+    );
+
     if (!SUCCEEDED(hr)) {
-        Napi::Error::New(info.Env(), "Failed to create ActiveDesktop." + GetLastErrorMessage()).ThrowAsJavaScriptException();
+        delete[] buffer;
+        CoUninitialize();
+        Napi::Error::New(info.Env(), "Failed to create ActiveDesktop." + GetLastErrorMessage())
+            .ThrowAsJavaScriptException();
         return info.Env().Undefined();
     }
 
-    hr = pIAD->SetWallpaper(imageWPath, 0);
-    //release
+    hr = pIAD->SetWallpaper(buffer, 0);
     delete[] buffer;
-    if (!SUCCEEDED(hr)) {
-        Napi::Error::New(info.Env(), "Failed to activeDesktop->SetWallpaper." + GetLastErrorMessage()).ThrowAsJavaScriptException();
-        return info.Env().Undefined();
+
+    if (SUCCEEDED(hr)) {
+        hr = pIAD->ApplyChanges(AD_APPLY_ALL);
     }
 
-    hr = pIAD->ApplyChanges(AD_APPLY_ALL);
-    if (!SUCCEEDED(hr)) {
-        Napi::Error::New(info.Env(), "Failed to activeDesktop->ApplyChanges." + GetLastErrorMessage()).ThrowAsJavaScriptException();
-        return info.Env().Undefined();
-    }
     pIAD->Release();
     CoUninitialize();
+
+    if (!SUCCEEDED(hr)) {
+        Napi::Error::New(info.Env(), "Failed to set wallpaper on Win7." + GetLastErrorMessage())
+            .ThrowAsJavaScriptException();
+        return info.Env().Undefined();
+    }
+
     return Napi::Boolean::New(info.Env(), true);
 }
 
@@ -174,14 +243,22 @@ Napi::Value getWallpaper(const Napi::CallbackInfo &info) {
                              "Invalid argument. Expected: screenIndex (number).").ThrowAsJavaScriptException();
         return info.Env().Undefined();
     }
-    initDesktopWallpaper();
+    if (!ensureDesktopWallpaper(info.Env())) {
+        return info.Env().Undefined();
+    }
 
     int screenIndex = info[0].As<Napi::Number>().Int32Value();
     LPWSTR monitorID = nullptr;
-    desktopWallpaper->GetMonitorDevicePathAt(screenIndex, &monitorID);
+    HRESULT monitorHr = desktopWallpaper->GetMonitorDevicePathAt(screenIndex, &monitorID);
+    if (!SUCCEEDED(monitorHr)) {
+        releaseDesktopWallpaper();
+        Napi::Error::New(info.Env(), "Failed to get monitor device path." + GetLastErrorMessage()).ThrowAsJavaScriptException();
+        return info.Env().Undefined();
+    }
 
     LPWSTR wallpaperPath = nullptr;
     HRESULT hr = desktopWallpaper->GetWallpaper(monitorID, &wallpaperPath);
+    CoTaskMemFree(monitorID);
 
     releaseDesktopWallpaper();
     if (SUCCEEDED(hr)) {
@@ -189,7 +266,7 @@ Napi::Value getWallpaper(const Napi::CallbackInfo &info) {
         CoTaskMemFree(wallpaperPath);
         return result;
     } else {
-        Napi::Error::New(info.Env(), "Failed to get wallpaper win7." + GetLastErrorMessage()).ThrowAsJavaScriptException();
+        Napi::Error::New(info.Env(), "Failed to get wallpaper." + GetLastErrorMessage()).ThrowAsJavaScriptException();
         return info.Env().Undefined();
     }
 }
@@ -198,7 +275,7 @@ Napi::Value getWallpaperWin7(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
     WCHAR wallpaperPath[MAX_PATH];
     if (SystemParametersInfo(SPI_GETDESKWALLPAPER, MAX_PATH, wallpaperPath, 0)) {
-        return Napi::String::New(env, reinterpret_cast<const char*>(wallpaperPath));
+        return Napi::String::New(env, reinterpret_cast<const char16_t*>(wallpaperPath));
     }else{
         Napi::Error::New(info.Env(), "Failed to get wallpaper win7." + GetLastErrorMessage()).ThrowAsJavaScriptException();
         return info.Env().Undefined();
@@ -211,7 +288,10 @@ Napi::Value setPosition(const Napi::CallbackInfo &info) {
                              "Invalid arguments. Expected: fillMode (number).").ThrowAsJavaScriptException();
         return info.Env().Undefined();
     }
-    initDesktopWallpaper();
+    if (!ensureDesktopWallpaper(info.Env())) {
+        return info.Env().Undefined();
+    }
+
     DESKTOP_WALLPAPER_POSITION fillMode = (DESKTOP_WALLPAPER_POSITION)info[0].As<Napi::Number>().Int32Value();
     HRESULT hr = desktopWallpaper->SetPosition(fillMode);
     releaseDesktopWallpaper();
@@ -224,7 +304,10 @@ Napi::Value setPosition(const Napi::CallbackInfo &info) {
 }
 
 Napi::Value getPosition(const Napi::CallbackInfo &info) {
-    initDesktopWallpaper();
+    if (!ensureDesktopWallpaper(info.Env())) {
+        return info.Env().Undefined();
+    }
+
     DESKTOP_WALLPAPER_POSITION position;
     HRESULT hr = desktopWallpaper->GetPosition(&position);
     releaseDesktopWallpaper();
@@ -241,7 +324,10 @@ Napi::Value setBackgroundColor(const Napi::CallbackInfo& info) {
         Napi::TypeError::New(info.Env(), "Invalid arguments. Expected: RGB COLOR (8,8,8).").ThrowAsJavaScriptException();
         return info.Env().Undefined();
     }
-    initDesktopWallpaper();
+    if (!ensureDesktopWallpaper(info.Env())) {
+        return info.Env().Undefined();
+    }
+
     int R = info[0].As<Napi::Number>().Int32Value();
     int G = info[1].As<Napi::Number>().Int32Value();
     int B = info[2].As<Napi::Number>().Int32Value();
@@ -257,7 +343,9 @@ Napi::Value setBackgroundColor(const Napi::CallbackInfo& info) {
 }
 
 Napi::Value getBackgroundColor(const Napi::CallbackInfo& info) {
-    initDesktopWallpaper();
+    if (!ensureDesktopWallpaper(info.Env())) {
+        return info.Env().Undefined();
+    }
 
     COLORREF color;
     HRESULT hr =   desktopWallpaper->GetBackgroundColor(&color);

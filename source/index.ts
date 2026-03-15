@@ -5,6 +5,21 @@ import * as fs from "fs";
 
 const nodeDesktopWallpaper = bindings("desktop-wallpaper");
 
+const isWin7 = os.release().startsWith("6.1");
+const VALID_FILL_MODES = new Set([0, 1, 2, 3, 4, 5]);
+
+const assertFillMode = (fillMode: number) => {
+    if (!Number.isInteger(fillMode) || !VALID_FILL_MODES.has(fillMode)) {
+        throw new RangeError("Invalid fillMode. Expected an integer between 0 and 5.");
+    }
+};
+
+const assertColorChannel = (name: string, value: number) => {
+    if (!Number.isInteger(value) || value < 0 || value > 255) {
+        throw new RangeError(`Invalid ${name}. Expected an integer between 0 and 255.`);
+    }
+};
+
 // interface SlideShowOptions {
 //
 //   folderPath?: string,
@@ -60,9 +75,9 @@ const getMonitorId = (screenIndex: number): string => {
  */
 const setWallpaper = (screenIndex: number, imagePath: string) => {
     if (!fs.existsSync(imagePath)) {
-        throw  new Error("The image file does not exist.");
+        throw new Error("The image file does not exist.");
     }
-    if (os.release().startsWith("6.1")) {
+    if (isWin7) {
         return nodeDesktopWallpaper.setWallpaperWin7(imagePath);
     } else {
         nodeDesktopWallpaper.setWallpaper(screenIndex, imagePath);
@@ -74,7 +89,7 @@ const setWallpaper = (screenIndex: number, imagePath: string) => {
  * @param screenIndex
  */
 const getWallpaper = (screenIndex: number): string => {
-    if (os.release().startsWith("6.1")) {
+    if (isWin7) {
         return nodeDesktopWallpaper.getWallpaperWin7();
     } else {
         return nodeDesktopWallpaper.getWallpaper(screenIndex);
@@ -92,7 +107,8 @@ const getWallpaper = (screenIndex: number): string => {
  * - SPAN    = 5
  */
 const setPosition = (fillMode: number) => {
-    if (os.release().startsWith("6.1")) {
+    assertFillMode(fillMode);
+    if (isWin7) {
         wallpaperWin7.setPosition(fillMode)
         nodeDesktopWallpaper.refresh();
     } else {
@@ -105,7 +121,7 @@ const setPosition = (fillMode: number) => {
  * @returns {number} fillMode
  */
 const getPosition = (): number => {
-    if (os.release().startsWith("6.1")) {
+    if (isWin7) {
         return wallpaperWin7.getPosition()
     } else {
         return nodeDesktopWallpaper.getPosition();
@@ -119,7 +135,10 @@ const getPosition = (): number => {
  * @param b
  */
 const setBackgroundColor = (r: number, g: number, b: number) => {
-    if (os.release().startsWith("6.1")) {
+    assertColorChannel("r", r);
+    assertColorChannel("g", g);
+    assertColorChannel("b", b);
+    if (isWin7) {
         wallpaperWin7.setBackgroundColor(r, g, b)
         nodeDesktopWallpaper.refresh();
     } else {
@@ -132,7 +151,7 @@ const setBackgroundColor = (r: number, g: number, b: number) => {
  * @returns {string} RGB color example: 8,8,8
  */
 const getBackgroundColor = (): string => {
-    if (os.release().startsWith("6.1")) {
+    if (isWin7) {
         return wallpaperWin7.getBackgroundColor()
     } else {
         return nodeDesktopWallpaper.getBackgroundColor();
